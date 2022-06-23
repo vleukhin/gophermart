@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/rs/zerolog/log"
-	"github.com/vleukhin/gophermart/internal/services"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
+
+	"github.com/vleukhin/gophermart/internal/services"
 )
 
 type UserController struct {
@@ -19,7 +22,7 @@ func NewUserController(service services.UserService) UserController {
 
 type (
 	RegisterParams struct {
-		Name     string `json:"name"`
+		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
 )
@@ -47,8 +50,21 @@ func (c UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = c.service.UserRegister(params.Name, params.Password)
+	if !params.isValid() {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = c.service.UserRegister(params.Login, params.Password)
 	if err != nil {
+		if errors.Is(err, services.ErrLUsernameTaken) {
+			w.WriteHeader(http.StatusConflict)
+			return
+		}
 		errorLogger.Err(err).Msg("Failed to create user")
 	}
+}
+
+func (p RegisterParams) isValid() bool {
+	return p.Login != "" && p.Password != ""
 }

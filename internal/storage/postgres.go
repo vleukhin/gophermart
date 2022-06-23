@@ -2,8 +2,11 @@ package storage
 
 import (
 	"context"
-	"github.com/jackc/pgx/v4"
 	"time"
+
+	"github.com/jackc/pgx/v4"
+
+	"github.com/vleukhin/gophermart/internal/types"
 )
 
 type PostgresStorage struct {
@@ -34,4 +37,8 @@ func (s *PostgresStorage) Ping(ctx context.Context) error {
 
 func (s *PostgresStorage) CreateUser(name string, password string) error {
 	return nil
+}
+
+func (s *PostgresStorage) GetUser(name string) (*types.User, error) {
+	return nil, nil
 }
