@@ -2,12 +2,9 @@ package storage
 
 import (
 	"context"
-	"errors"
 
 	"github.com/vleukhin/gophermart/internal/types"
 )
-
-var ErrDuplicateUserName = errors.New("this username is already taken")
 
 type Storage interface {
 	Ping(ctx context.Context) error

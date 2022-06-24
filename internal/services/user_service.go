@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/rs/zerolog/log"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/vleukhin/gophermart/internal/storage"
 )
@@ -20,7 +21,12 @@ func NewUserService(storage storage.Storage) UserService {
 }
 
 func (s UserService) UserRegister(ctx context.Context, login, password string) error {
-	created, err := s.storage.CreateUser(ctx, login, password)
+	passwordHash, err := s.hashPassword(password)
+	if err != nil {
+		return err
+	}
+
+	created, err := s.storage.CreateUser(ctx, login, passwordHash)
 	if err != nil {
 		return err
 	}
@@ -32,4 +38,14 @@ func (s UserService) UserRegister(ctx context.Context, login, password string) e
 	log.Debug().Msgf("User %s created", login)
 
 	return nil
+}
+
+func (s UserService) hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func (s UserService) checkPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }

@@ -2,10 +2,10 @@ package storage
 
 import (
 	"context"
-	"github.com/rs/zerolog/log"
 	"time"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/rs/zerolog/log"
 
 	"github.com/vleukhin/gophermart/internal/types"
 )
