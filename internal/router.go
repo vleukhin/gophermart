@@ -39,7 +39,7 @@ func gzipEncode(next http.Handler) http.Handler {
 
 		gz, err := gzip.NewWriterLevel(w, gzip.BestCompression)
 		if err != nil {
-			log.Error().Msg("Failed to create gzip writer: " + err.Error())
+			log.Error().Msg("Failed to create gzip  writer: " + err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
