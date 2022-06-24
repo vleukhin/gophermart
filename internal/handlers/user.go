@@ -55,9 +55,9 @@ func (c UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = c.service.UserRegister(params.Login, params.Password)
+	err = c.service.UserRegister(r.Context(), params.Login, params.Password)
 	if err != nil {
-		if errors.Is(err, services.ErrLUsernameTaken) {
+		if errors.Is(err, services.ErrUsernameTaken) {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}

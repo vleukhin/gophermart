@@ -48,10 +48,18 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 
 	userService := services.NewUserService(db)
 
-	return &Application{
+	app := Application{
 		cfg:         cfg,
+		db:          db,
 		userService: userService,
-	}, nil
+	}
+
+	err = app.migrate()
+	if err != nil {
+		return nil, err
+	}
+
+	return &app, nil
 }
 
 func (app *Application) Run(err chan<- error) {
@@ -64,4 +72,8 @@ func (app *Application) ShutDown() error {
 	defer cancel()
 
 	return app.db.ShutDown(ctx)
+}
+
+func (app *Application) migrate() error {
+	return app.db.Migrate(context.TODO())
 }
