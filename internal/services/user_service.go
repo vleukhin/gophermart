@@ -20,7 +20,7 @@ func NewUserService(storage storage.Storage) UserService {
 	return UserService{storage: storage}
 }
 
-func (s UserService) UserRegister(ctx context.Context, login, password string) error {
+func (s UserService) Register(ctx context.Context, login, password string) error {
 	passwordHash, err := s.hashPassword(password)
 	if err != nil {
 		return err
@@ -38,6 +38,19 @@ func (s UserService) UserRegister(ctx context.Context, login, password string) e
 	log.Debug().Msgf("User %s created", login)
 
 	return nil
+}
+
+func (s UserService) Login(ctx context.Context, name, password string) (bool, error) {
+	user, err := s.storage.GetUser(ctx, name)
+	if err != nil {
+		return false, err
+	}
+
+	if user == nil || !s.checkPasswordHash(password, user.Password) {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (s UserService) hashPassword(password string) (string, error) {

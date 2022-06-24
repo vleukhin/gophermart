@@ -24,7 +24,8 @@ func NewRouter(app *Application) *mux.Router {
 	r := mux.NewRouter()
 	r.Use(gzipEncode)
 
-	r.HandleFunc("/api/user/register", userController.CreateUser).Methods(http.MethodPost)
+	r.HandleFunc("/api/user/register", userController.Register).Methods(http.MethodPost)
+	r.HandleFunc("/api/user/login", userController.Login).Methods(http.MethodPost)
 
 	return r
 }
