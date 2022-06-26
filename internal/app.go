@@ -15,6 +15,7 @@ type AppConfig struct {
 	Addr        string `env:"RUN_ADDRESS" envDefault:"localhost:8080"`
 	DatabaseURI string `env:"DATABASE_URI"`
 	LogLevel    string `env:"LOG_LEVEL" envDefault:"debug"`
+	JwtKey      string `env:"JWT_KEY"`
 }
 
 type Application struct {
@@ -31,11 +32,13 @@ func (cfg *AppConfig) Parse() error {
 
 	addr := pflag.StringP("addr", "a", cfg.Addr, "Server address")
 	logLevel := pflag.StringP("log-level", "l", cfg.LogLevel, "Application log level")
+	jwtKey := pflag.StringP("jwt-key", "j", cfg.JwtKey, "JWT key for authentication")
 
 	pflag.Parse()
 
 	cfg.Addr = *addr
 	cfg.LogLevel = *logLevel
+	cfg.JwtKey = *jwtKey
 
 	return nil
 }
@@ -46,7 +49,7 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 		return nil, err
 	}
 
-	userService := services.NewUserService(db)
+	userService := services.NewUserService(db, cfg.JwtKey)
 
 	app := Application{
 		cfg:         cfg,

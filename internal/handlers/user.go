@@ -3,11 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"github.com/rs/zerolog/log"
 	"io"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/rs/zerolog/log"
 
 	"github.com/vleukhin/gophermart/internal/services"
 )
@@ -55,7 +54,7 @@ func (c UserController) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = c.service.Register(r.Context(), params.Login, params.Password)
+	tokenString, ttl, err := c.service.Register(r.Context(), params.Login, params.Password)
 	if err != nil {
 		if errors.Is(err, services.ErrUsernameTaken) {
 			w.WriteHeader(http.StatusConflict)
@@ -64,6 +63,14 @@ func (c UserController) Register(w http.ResponseWriter, r *http.Request) {
 		errorLogger.Err(err).Msg("Failed to create user")
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    tokenString,
+		Expires:  ttl,
+		Path:     "/",
+		HttpOnly: true,
+	})
 }
 
 func (c UserController) Login(w http.ResponseWriter, r *http.Request) {
@@ -94,16 +101,20 @@ func (c UserController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	loggedIn, err := c.service.Login(r.Context(), params.Login, params.Password)
+	tokenString, ttl, err := c.service.Login(r.Context(), params.Login, params.Password)
 	if err != nil {
 		errorLogger.Err(err).Msg("Failed to log in user")
 		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	if !loggedIn {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    tokenString,
+		Expires:  ttl,
+		Path:     "/",
+		HttpOnly: true,
+	})
 }
 
 func (p AuthParams) isValid() bool {

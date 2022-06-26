@@ -85,7 +85,27 @@ const createUsersTable = `
 	)
 `
 
+// language=PostgreSQL
+const createSessionsTable = `
+	CREATE TABLE IF NOT EXISTS sessions (
+		id            varchar(191) not null constraint sessions_id_unique unique,
+		user_id       bigint,
+		last_activity integer not null
+	)
+`
+
 func (s *PostgresStorage) Migrate(ctx context.Context) error {
-	_, err := s.conn.Exec(ctx, createUsersTable)
-	return err
+	migrations := []string{
+		createUsersTable,
+		createSessionsTable,
+	}
+
+	for _, m := range migrations {
+		_, err := s.conn.Exec(ctx, m)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
