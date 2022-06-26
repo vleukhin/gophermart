@@ -77,6 +77,25 @@ func (s *PostgresStorage) GetUser(ctx context.Context, name string) (*types.User
 }
 
 // language=PostgreSQL
+const getUserByIDSQL = `SELECT id, name, password FROM users WHERE id = $1`
+
+func (s *PostgresStorage) GetUserByID(ctx context.Context, id int) (*types.User, error) {
+	var user types.User
+
+	row := s.conn.QueryRow(ctx, getUserByIDSQL, id)
+	err := row.Scan(&user.ID, &user.Name, &user.Password)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+// language=PostgreSQL
 const createUsersTable = `
 	CREATE TABLE IF NOT EXISTS users (
 		id    serial constraint table_name_pk primary key,

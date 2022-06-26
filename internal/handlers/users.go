@@ -1,34 +1,40 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"github.com/rs/zerolog/log"
 	"io"
 	"io/ioutil"
 	"net/http"
 
+	"github.com/dgrijalva/jwt-go"
+	"github.com/rs/zerolog/log"
+
 	"github.com/vleukhin/gophermart/internal/services"
 )
 
-type UserController struct {
-	service services.UserService
+type UsersController struct {
+	service services.UsersService
 }
 
-func NewUserController(service services.UserService) UserController {
-	return UserController{service: service}
+func NewUserController(service services.UsersService) UsersController {
+	return UsersController{service: service}
 }
 
 type (
-	AuthParams struct {
+	Credentials struct {
 		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
+	ContextKey string
 )
 
-func (c UserController) Register(w http.ResponseWriter, r *http.Request) {
-	var params AuthParams
-	errorLogger := log.Error().Str("method", "UserController::Register")
+const AuthUserID ContextKey = "userID"
+
+func (c UsersController) Register(w http.ResponseWriter, r *http.Request) {
+	var params Credentials
+	errorLogger := log.Error().Str("method", "UsersController::Register")
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
@@ -73,9 +79,9 @@ func (c UserController) Register(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (c UserController) Login(w http.ResponseWriter, r *http.Request) {
-	var params AuthParams
-	errorLogger := log.Error().Str("method", "UserController::Login")
+func (c UsersController) Login(w http.ResponseWriter, r *http.Request) {
+	var params Credentials
+	errorLogger := log.Error().Str("method", "UsersController::Login")
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
@@ -117,6 +123,25 @@ func (c UserController) Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (p AuthParams) isValid() bool {
+func (p Credentials) isValid() bool {
 	return p.Login != "" && p.Password != ""
+}
+
+func (c UsersController) AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		claims, err := c.service.CheckAuth(r)
+		if err != nil {
+			if err == http.ErrNoCookie || err == jwt.ErrSignatureInvalid {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			log.Error().Err(err)
+			return
+		}
+
+		r = r.WithContext(context.WithValue(r.Context(), AuthUserID, claims.UserID))
+
+		next.ServeHTTP(w, r)
+	})
 }

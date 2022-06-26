@@ -5,3 +5,6 @@ type User struct {
 	Name     string
 	Password string
 }
+
+type Order struct {
+}

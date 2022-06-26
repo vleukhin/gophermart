@@ -19,9 +19,10 @@ type AppConfig struct {
 }
 
 type Application struct {
-	cfg         *AppConfig
-	db          storage.Storage
-	userService services.UserService
+	cfg           *AppConfig
+	db            storage.Storage
+	UsersService  services.UsersService
+	OrdersService services.OrdersService
 }
 
 func (cfg *AppConfig) Parse() error {
@@ -50,11 +51,13 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 	}
 
 	userService := services.NewUserService(db, cfg.JwtKey)
+	ordersService := services.NewOrdersService(db)
 
 	app := Application{
-		cfg:         cfg,
-		db:          db,
-		userService: userService,
+		cfg:           cfg,
+		db:            db,
+		UsersService:  userService,
+		OrdersService: ordersService,
 	}
 
 	err = app.migrate()
