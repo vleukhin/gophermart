@@ -20,7 +20,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 
 func NewRouter(app *Application) *mux.Router {
 	userController := handlers.NewUserController(app.UsersService)
-	ordersController := handlers.NewOrdersController(app.OrdersService)
+	ordersController := handlers.NewOrdersController(app.UsersService, app.OrdersService)
 
 	r := mux.NewRouter().PathPrefix("/api").Subrouter()
 	r.Use(gzipEncode)
@@ -31,7 +31,8 @@ func NewRouter(app *Application) *mux.Router {
 	authRoutes := r.PathPrefix("").Subrouter()
 	authRoutes.Use(userController.AuthMiddleware)
 
-	authRoutes.HandleFunc("/user/orders", ordersController.List).Methods(http.MethodPost)
+	authRoutes.HandleFunc("/user/orders", ordersController.Create).Methods(http.MethodPost)
+	authRoutes.HandleFunc("/user/orders", ordersController.List).Methods(http.MethodGet)
 
 	return r
 }

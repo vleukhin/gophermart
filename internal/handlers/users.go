@@ -27,10 +27,7 @@ type (
 		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
-	ContextKey string
 )
-
-const AuthUserID ContextKey = "userID"
 
 func (c UsersController) Register(w http.ResponseWriter, r *http.Request) {
 	var params Credentials
@@ -140,7 +137,7 @@ func (c UsersController) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), AuthUserID, claims.UserID))
+		r = r.WithContext(context.WithValue(r.Context(), services.AuthUserID, claims.UserID))
 
 		next.ServeHTTP(w, r)
 	})

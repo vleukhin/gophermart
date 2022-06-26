@@ -96,27 +96,65 @@ func (s *PostgresStorage) GetUserByID(ctx context.Context, id int) (*types.User,
 }
 
 // language=PostgreSQL
+const createOrderSQL = `
+	INSERT INTO orders (id, user_id, status, accrual, uploaded_at)
+	VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING 
+`
+
+func (s *PostgresStorage) CreateOrder(ctx context.Context, userID, orderID int) error {
+	_, err := s.conn.Exec(ctx, createOrderSQL, orderID, userID, "CREATED", 0, time.Now())
+
+	if err != nil {
+		log.Debug().Err(err)
+		return err
+	}
+
+	return nil
+}
+
+// language=PostgreSQL
+const getOrderByID = `SELECT id, user_id, status, accrual, uploaded_at FROM orders WHERE id = $1`
+
+func (s *PostgresStorage) GetOrderByID(ctx context.Context, id int) (*types.Order, error) {
+	var order types.Order
+
+	row := s.conn.QueryRow(ctx, getOrderByID, id)
+	err := row.Scan(&order.ID, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &order, nil
+}
+
+// language=PostgreSQL
 const createUsersTable = `
 	CREATE TABLE IF NOT EXISTS users (
-		id    serial constraint table_name_pk primary key,
-		name  varchar(255) not null unique,
-		password  varchar(255) not null
+		id serial constraint users_pk primary key,
+		name varchar(255) not null unique,
+		password varchar(255) not null
 	)
 `
 
 // language=PostgreSQL
-const createSessionsTable = `
-	CREATE TABLE IF NOT EXISTS sessions (
-		id            varchar(191) not null constraint sessions_id_unique unique,
-		user_id       bigint,
-		last_activity integer not null
+const createOrdersTable = `
+	CREATE TABLE IF NOT EXISTS orders (
+		id bigserial constraint orders_pk primary key,
+		user_id integer,
+		status varchar(255) not null,
+		accrual integer not null,
+		uploaded_at timestamp not null
 	)
 `
 
 func (s *PostgresStorage) Migrate(ctx context.Context) error {
 	migrations := []string{
 		createUsersTable,
-		createSessionsTable,
+		createOrdersTable,
 	}
 
 	for _, m := range migrations {

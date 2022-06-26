@@ -13,15 +13,19 @@ import (
 	"github.com/vleukhin/gophermart/internal/storage"
 )
 
-type UsersService struct {
-	storage storage.Storage
-	jwtKey  []byte
-}
+type (
+	UsersService struct {
+		storage storage.Storage
+		jwtKey  []byte
+	}
+	Claims struct {
+		UserID int `json:"user_id"`
+		jwt.StandardClaims
+	}
+	ContextKey string
+)
 
-type Claims struct {
-	UserID int `json:"user_id"`
-	jwt.StandardClaims
-}
+const AuthUserID ContextKey = "userID"
 
 var ErrUsernameTaken = errors.New("this username is already taken")
 
@@ -97,10 +101,6 @@ func (s UsersService) CheckAuth(r *http.Request) (*Claims, error) {
 	tknStr := c.Value
 	claims := &Claims{}
 
-	// Parse the JWT string and store the result in `claims`.
-	// Note that we are passing the key in this method as well. This method will return an error
-	// if the token is invalid (if it has expired according to the expiry time we set on sign in),
-	// or if the signature does not match
 	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return s.jwtKey, nil
 	})
@@ -112,6 +112,15 @@ func (s UsersService) CheckAuth(r *http.Request) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func (s UsersService) GetAuthUserID(ctx context.Context) int {
+	value := ctx.Value(AuthUserID)
+	if id, ok := value.(int); ok {
+		return id
+	}
+
+	return 0
 }
 
 func (s UsersService) hashPassword(password string) (string, error) {
