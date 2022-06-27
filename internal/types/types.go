@@ -9,7 +9,7 @@ type (
 		Password string
 	}
 	Order struct {
-		ID         int         `json:"number"`
+		ID         string      `json:"number"`
 		UserID     int         `json:"-"`
 		Status     OrderStatus `json:"status"`
 		Accrual    int         `json:"accrual,omitempty"`

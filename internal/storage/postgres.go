@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -103,12 +104,16 @@ const createOrderSQL = `
 
 func (s *PostgresStorage) CreateOrder(ctx context.Context, userID, orderID int) (types.Order, error) {
 	order := types.Order{
-		ID:         orderID,
+		ID:         strconv.Itoa(orderID),
 		UserID:     userID,
 		Status:     types.OrderStatusNew,
 		UploadedAt: time.Now(),
 	}
-	_, err := s.conn.Exec(ctx, createOrderSQL, order.ID, order.UserID, order.Status, 0, order.UploadedAt)
+
+	var id int
+	_, err := s.conn.Exec(ctx, createOrderSQL, &id, order.UserID, order.Status, 0, order.UploadedAt)
+
+	order.ID = strconv.Itoa(id)
 
 	if err != nil {
 		log.Debug().Err(err)
@@ -119,13 +124,15 @@ func (s *PostgresStorage) CreateOrder(ctx context.Context, userID, orderID int) 
 }
 
 // language=PostgreSQL
-const getOrderByID = `SELECT id, user_id, status, accrual, uploaded_at FROM orders WHERE id = $1`
+const getOrderByID = `SELECT user_id, status, accrual, uploaded_at FROM orders WHERE id = $1`
 
 func (s *PostgresStorage) GetOrderByID(ctx context.Context, id int) (*types.Order, error) {
-	var order types.Order
+	order := types.Order{
+		ID: strconv.Itoa(id),
+	}
 
 	row := s.conn.QueryRow(ctx, getOrderByID, id)
-	err := row.Scan(&order.ID, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
+	err := row.Scan(&order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
@@ -148,12 +155,14 @@ func (s *PostgresStorage) GetUserOrders(ctx context.Context, userID int) ([]type
 	}
 
 	for rows.Next() {
+		var id int
 		order := types.Order{}
-		err := rows.Scan(&order.ID, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
+		err := rows.Scan(&id, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
 		if err != nil {
 			return nil, err
 		}
 
+		order.ID = strconv.Itoa(id)
 		result = append(result, order)
 	}
 

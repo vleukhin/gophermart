@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/rs/zerolog/log"
 	"github.com/vleukhin/gophermart/internal/types"
+	"strconv"
 	"time"
 )
 
@@ -39,8 +40,9 @@ func (s *AccrualService) Run(ctx context.Context) {
 }
 
 func (s *AccrualService) processOrder(order types.Order) error {
+	id, _ := strconv.Atoi(order.ID)
 	ctx := context.Background()
-	err := s.OrdersService.MarkOrderAsProcessing(ctx, order.ID)
+	err := s.OrdersService.MarkOrderAsProcessing(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -50,7 +52,7 @@ func (s *AccrualService) processOrder(order types.Order) error {
 		log.Error().Err(err).Msg("Failed to get order accrual")
 	}
 
-	return s.OrdersService.MarkOrderAsProcessed(ctx, order.ID, accrual)
+	return s.OrdersService.MarkOrderAsProcessed(ctx, id, accrual)
 }
 
 func (s *AccrualService) getOrderAccrual(order types.Order) (int, error) {
