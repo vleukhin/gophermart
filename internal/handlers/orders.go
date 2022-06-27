@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"github.com/rs/zerolog/log"
 	"io"
 	"io/ioutil"
@@ -29,6 +30,34 @@ func (c OrdersController) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	errorLogger := log.Error().Str("method", "OrdersController::List")
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			errorLogger.Err(err).Msg("Failed to close request body")
+		}
+	}(r.Body)
+
+	orders, err := c.ordersService.List(r.Context(), userID)
+	if err != nil {
+		errorLogger.Err(err).Msg("Failed to get orders")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	response, err := json.Marshal(orders)
+	if err != nil {
+		errorLogger.Err(err).Msg("Failed to marshal JSON")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	_, err = w.Write(response)
+	if err != nil {
+		errorLogger.Err(err).Msg("Failed to write response body")
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 func (c OrdersController) Create(w http.ResponseWriter, r *http.Request) {

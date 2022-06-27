@@ -102,7 +102,7 @@ const createOrderSQL = `
 `
 
 func (s *PostgresStorage) CreateOrder(ctx context.Context, userID, orderID int) error {
-	_, err := s.conn.Exec(ctx, createOrderSQL, orderID, userID, "CREATED", 0, time.Now())
+	_, err := s.conn.Exec(ctx, createOrderSQL, orderID, userID, types.OrderStatusNew, 0, time.Now())
 
 	if err != nil {
 		log.Debug().Err(err)
@@ -129,6 +129,29 @@ func (s *PostgresStorage) GetOrderByID(ctx context.Context, id int) (*types.Orde
 	}
 
 	return &order, nil
+}
+
+// language=PostgreSQL
+const getUserOrders = `SELECT id, user_id, status, accrual, uploaded_at FROM orders WHERE user_id = $1`
+
+func (s *PostgresStorage) GetUserOrders(ctx context.Context, userID int) ([]types.Order, error) {
+	var result []types.Order
+	rows, err := s.conn.Query(ctx, getUserOrders, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		order := types.Order{}
+		err := rows.Scan(&order.ID, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, order)
+	}
+
+	return result, nil
 }
 
 // language=PostgreSQL

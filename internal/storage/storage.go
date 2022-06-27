@@ -23,5 +23,6 @@ type UsersStorage interface {
 
 type OrdersStorage interface {
 	CreateOrder(ctx context.Context, userID, orderID int) error
-	GetOrderByID(ctx context.Context, id int) (order *types.Order, err error)
+	GetOrderByID(ctx context.Context, id int) (*types.Order, error)
+	GetUserOrders(ctx context.Context, userID int) ([]types.Order, error)
 }

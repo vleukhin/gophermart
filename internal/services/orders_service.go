@@ -17,7 +17,7 @@ func NewOrdersService(storage storage.Storage) OrdersService {
 }
 
 func (s OrdersService) List(ctx context.Context, userID int) ([]types.Order, error) {
-	return nil, nil
+	return s.storage.GetUserOrders(ctx, userID)
 }
 
 func (s OrdersService) Create(ctx context.Context, userID, orderID int) error {
