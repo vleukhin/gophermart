@@ -22,8 +22,8 @@ type UsersStorage interface {
 }
 
 type OrdersStorage interface {
-	CreateOrder(ctx context.Context, userID, orderID int) (types.Order, error)
-	GetOrderByID(ctx context.Context, id int) (*types.Order, error)
+	CreateOrder(ctx context.Context, userID int, orderID string) (types.Order, error)
+	GetOrderByID(ctx context.Context, id string) (*types.Order, error)
 	GetUserOrders(ctx context.Context, userID int) ([]types.Order, error)
-	UpdateOrders(ctx context.Context, orderID int, status types.OrderStatus, accrual int) error
+	UpdateOrder(ctx context.Context, orderID string, status types.OrderStatus, accrual int) error
 }

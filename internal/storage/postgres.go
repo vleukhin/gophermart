@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -103,18 +102,15 @@ const createOrderSQL = `
 	VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING 
 `
 
-func (s *PostgresStorage) CreateOrder(ctx context.Context, userID, orderID int) (types.Order, error) {
+func (s *PostgresStorage) CreateOrder(ctx context.Context, userID int, orderID string) (types.Order, error) {
 	order := types.Order{
-		ID:         strconv.Itoa(orderID),
+		ID:         orderID,
 		UserID:     userID,
 		Status:     types.OrderStatusNew,
 		UploadedAt: time.Now(),
 	}
 
-	var id int
-	_, err := s.pool.Exec(ctx, createOrderSQL, &id, order.UserID, order.Status, 0, order.UploadedAt)
-
-	order.ID = strconv.Itoa(id)
+	_, err := s.pool.Exec(ctx, createOrderSQL, order.ID, order.UserID, order.Status, 0, order.UploadedAt)
 
 	if err != nil {
 		log.Debug().Err(err)
@@ -127,9 +123,9 @@ func (s *PostgresStorage) CreateOrder(ctx context.Context, userID, orderID int) 
 // language=PostgreSQL
 const getOrderByID = `SELECT user_id, status, accrual, uploaded_at FROM orders WHERE id = $1`
 
-func (s *PostgresStorage) GetOrderByID(ctx context.Context, id int) (*types.Order, error) {
+func (s *PostgresStorage) GetOrderByID(ctx context.Context, id string) (*types.Order, error) {
 	order := types.Order{
-		ID: strconv.Itoa(id),
+		ID: id,
 	}
 
 	row := s.pool.QueryRow(ctx, getOrderByID, id)
@@ -156,14 +152,12 @@ func (s *PostgresStorage) GetUserOrders(ctx context.Context, userID int) ([]type
 	}
 
 	for rows.Next() {
-		var id int
 		order := types.Order{}
-		err := rows.Scan(&id, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
+		err := rows.Scan(&order.ID, &order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
 		if err != nil {
 			return nil, err
 		}
 
-		order.ID = strconv.Itoa(id)
 		result = append(result, order)
 	}
 
@@ -173,7 +167,7 @@ func (s *PostgresStorage) GetUserOrders(ctx context.Context, userID int) ([]type
 // language=PostgreSQL
 const updateOrder = `UPDATE orders SET status = $1, accrual = $2 WHERE id = $3`
 
-func (s *PostgresStorage) UpdateOrders(ctx context.Context, orderID int, status types.OrderStatus, accrual int) error {
+func (s *PostgresStorage) UpdateOrder(ctx context.Context, orderID string, status types.OrderStatus, accrual int) error {
 	_, err := s.pool.Exec(ctx, updateOrder, status, accrual, orderID)
 
 	return err
@@ -191,7 +185,7 @@ const createUsersTable = `
 // language=PostgreSQL
 const createOrdersTable = `
 	CREATE TABLE IF NOT EXISTS orders (
-		id bigserial constraint orders_pk primary key,
+		id varchar(255) constraint orders_pk primary key,
 		user_id integer,
 		status varchar(255) not null,
 		accrual integer not null,

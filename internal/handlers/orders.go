@@ -3,12 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"github.com/rs/zerolog/log"
+	"github.com/vleukhin/gophermart/internal/services"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"strconv"
-
-	"github.com/vleukhin/gophermart/internal/services"
 )
 
 type OrdersController struct {
@@ -88,11 +86,7 @@ func (c OrdersController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderID, err := strconv.Atoi(string(body))
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	orderID := string(body)
 
 	if !c.ordersService.ValidateOrderID(orderID) {
 		w.WriteHeader(http.StatusUnprocessableEntity)

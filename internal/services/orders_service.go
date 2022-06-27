@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/vleukhin/gophermart/internal/storage"
 	"github.com/vleukhin/gophermart/internal/types"
+	"strconv"
 )
 
 type OrdersService struct {
@@ -22,7 +23,7 @@ func (s OrdersService) List(ctx context.Context, userID int) ([]types.Order, err
 	return s.storage.GetUserOrders(ctx, userID)
 }
 
-func (s OrdersService) Create(ctx context.Context, userID, orderID int) error {
+func (s OrdersService) Create(ctx context.Context, userID int, orderID string) error {
 	order, err := s.storage.CreateOrder(ctx, userID, orderID)
 	if err != nil {
 		return err
@@ -33,22 +34,27 @@ func (s OrdersService) Create(ctx context.Context, userID, orderID int) error {
 	return nil
 }
 
-func (s OrdersService) GetById(ctx context.Context, orderID int) (*types.Order, error) {
+func (s OrdersService) GetById(ctx context.Context, orderID string) (*types.Order, error) {
 	return s.storage.GetOrderByID(ctx, orderID)
 }
 
-func (s OrdersService) ValidateOrderID(id int) bool {
+func (s OrdersService) ValidateOrderID(id string) bool {
+	_, err := strconv.Atoi(id)
+	if err != nil {
+		return false
+	}
+
 	return true
 }
 
-func (s OrdersService) MarkOrderAsProcessed(ctx context.Context, orderID, accrual int) error {
-	return s.storage.UpdateOrders(ctx, orderID, types.OrderStatusProcessed, accrual)
+func (s OrdersService) MarkOrderAsProcessed(ctx context.Context, orderID string, accrual int) error {
+	return s.storage.UpdateOrder(ctx, orderID, types.OrderStatusProcessed, accrual)
 }
 
-func (s OrdersService) MarkOrderAsProcessing(ctx context.Context, orderID int) error {
-	return s.storage.UpdateOrders(ctx, orderID, types.OrderStatusProcessing, 0)
+func (s OrdersService) MarkOrderAsProcessing(ctx context.Context, orderID string) error {
+	return s.storage.UpdateOrder(ctx, orderID, types.OrderStatusProcessing, 0)
 }
 
-func (s OrdersService) MarkOrderAsInvalid(ctx context.Context, orderID, accrual int) error {
-	return s.storage.UpdateOrders(ctx, orderID, types.OrderStatusProcessing, accrual)
+func (s OrdersService) MarkOrderAsInvalid(ctx context.Context, orderID string, accrual int) error {
+	return s.storage.UpdateOrder(ctx, orderID, types.OrderStatusProcessing, accrual)
 }
