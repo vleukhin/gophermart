@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"strconv"
 	"time"
 
@@ -12,29 +13,29 @@ import (
 )
 
 type PostgresStorage struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 func NewPostgresStorage(dsn string, connTimeout time.Duration) (*PostgresStorage, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), connTimeout)
 	defer cancel()
 
-	conn, err := pgx.Connect(ctx, dsn)
+	conn, err := pgxpool.Connect(ctx, dsn)
 	if err != nil {
 		return nil, err
 	}
 
 	return &PostgresStorage{
-		conn: conn,
+		pool: conn,
 	}, nil
 }
 
-func (s *PostgresStorage) ShutDown(ctx context.Context) error {
-	return s.conn.Close(ctx)
+func (s *PostgresStorage) ShutDown() {
+	s.pool.Close()
 }
 
 func (s *PostgresStorage) Ping(ctx context.Context) error {
-	return s.conn.Ping(ctx)
+	return s.pool.Ping(ctx)
 }
 
 // language=PostgreSQL
@@ -44,7 +45,7 @@ const createUserSQL = `
 `
 
 func (s *PostgresStorage) CreateUser(ctx context.Context, name string, password string) (bool, error) {
-	t, err := s.conn.Exec(ctx, createUserSQL, name, password)
+	t, err := s.pool.Exec(ctx, createUserSQL, name, password)
 
 	if err != nil {
 		log.Debug().Err(err)
@@ -64,7 +65,7 @@ const getUserSQL = `SELECT id, name, password FROM users WHERE name = $1`
 func (s *PostgresStorage) GetUser(ctx context.Context, name string) (*types.User, error) {
 	var user types.User
 
-	row := s.conn.QueryRow(ctx, getUserSQL, name)
+	row := s.pool.QueryRow(ctx, getUserSQL, name)
 	err := row.Scan(&user.ID, &user.Name, &user.Password)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -83,7 +84,7 @@ const getUserByIDSQL = `SELECT id, name, password FROM users WHERE id = $1`
 func (s *PostgresStorage) GetUserByID(ctx context.Context, id int) (*types.User, error) {
 	var user types.User
 
-	row := s.conn.QueryRow(ctx, getUserByIDSQL, id)
+	row := s.pool.QueryRow(ctx, getUserByIDSQL, id)
 	err := row.Scan(&user.ID, &user.Name, &user.Password)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -111,7 +112,7 @@ func (s *PostgresStorage) CreateOrder(ctx context.Context, userID, orderID int) 
 	}
 
 	var id int
-	_, err := s.conn.Exec(ctx, createOrderSQL, &id, order.UserID, order.Status, 0, order.UploadedAt)
+	_, err := s.pool.Exec(ctx, createOrderSQL, &id, order.UserID, order.Status, 0, order.UploadedAt)
 
 	order.ID = strconv.Itoa(id)
 
@@ -131,7 +132,7 @@ func (s *PostgresStorage) GetOrderByID(ctx context.Context, id int) (*types.Orde
 		ID: strconv.Itoa(id),
 	}
 
-	row := s.conn.QueryRow(ctx, getOrderByID, id)
+	row := s.pool.QueryRow(ctx, getOrderByID, id)
 	err := row.Scan(&order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -149,7 +150,7 @@ const getUserOrders = `SELECT id, user_id, status, accrual, uploaded_at FROM ord
 
 func (s *PostgresStorage) GetUserOrders(ctx context.Context, userID int) ([]types.Order, error) {
 	var result []types.Order
-	rows, err := s.conn.Query(ctx, getUserOrders, userID)
+	rows, err := s.pool.Query(ctx, getUserOrders, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +174,7 @@ func (s *PostgresStorage) GetUserOrders(ctx context.Context, userID int) ([]type
 const updateOrder = `UPDATE orders SET status = $1, accrual = $2 WHERE id = $3`
 
 func (s *PostgresStorage) UpdateOrders(ctx context.Context, orderID int, status types.OrderStatus, accrual int) error {
-	_, err := s.conn.Exec(ctx, updateOrder, status, accrual, orderID)
+	_, err := s.pool.Exec(ctx, updateOrder, status, accrual, orderID)
 
 	return err
 }
@@ -205,7 +206,7 @@ func (s *PostgresStorage) Migrate(ctx context.Context) error {
 	}
 
 	for _, m := range migrations {
-		_, err := s.conn.Exec(ctx, m)
+		_, err := s.pool.Exec(ctx, m)
 		if err != nil {
 			return err
 		}

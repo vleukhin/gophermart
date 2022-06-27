@@ -8,7 +8,7 @@ import (
 
 type Storage interface {
 	Ping(ctx context.Context) error
-	ShutDown(ctx context.Context) error
+	ShutDown()
 	Migrate(ctx context.Context) error
 
 	UsersStorage

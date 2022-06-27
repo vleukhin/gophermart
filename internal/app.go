@@ -82,10 +82,8 @@ func (app *Application) Run(err chan<- error) {
 }
 
 func (app *Application) ShutDown() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	return app.db.ShutDown(ctx)
+	app.db.ShutDown()
+	return nil
 }
 
 func (app *Application) migrate() error {
