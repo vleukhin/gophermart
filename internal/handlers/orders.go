@@ -12,11 +12,12 @@ import (
 )
 
 type OrdersController struct {
-	usersService  services.UsersService
-	ordersService services.OrdersService
+	usersService   *services.UsersService
+	ordersService  *services.OrdersService
+	accrualService *services.AccrualService
 }
 
-func NewOrdersController(usersService services.UsersService, ordersService services.OrdersService) OrdersController {
+func NewOrdersController(usersService *services.UsersService, ordersService *services.OrdersService) OrdersController {
 	return OrdersController{
 		usersService:  usersService,
 		ordersService: ordersService,
@@ -42,6 +43,11 @@ func (c OrdersController) List(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		errorLogger.Err(err).Msg("Failed to get orders")
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if len(orders) == 0 {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 

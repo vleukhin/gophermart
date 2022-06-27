@@ -101,15 +101,21 @@ const createOrderSQL = `
 	VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING 
 `
 
-func (s *PostgresStorage) CreateOrder(ctx context.Context, userID, orderID int) error {
-	_, err := s.conn.Exec(ctx, createOrderSQL, orderID, userID, types.OrderStatusNew, 0, time.Now())
+func (s *PostgresStorage) CreateOrder(ctx context.Context, userID, orderID int) (types.Order, error) {
+	order := types.Order{
+		ID:         orderID,
+		UserID:     userID,
+		Status:     types.OrderStatusNew,
+		UploadedAt: time.Now(),
+	}
+	_, err := s.conn.Exec(ctx, createOrderSQL, order.ID, order.UserID, order.Status, 0, order.UploadedAt)
 
 	if err != nil {
 		log.Debug().Err(err)
-		return err
+		return order, err
 	}
 
-	return nil
+	return order, nil
 }
 
 // language=PostgreSQL
@@ -152,6 +158,15 @@ func (s *PostgresStorage) GetUserOrders(ctx context.Context, userID int) ([]type
 	}
 
 	return result, nil
+}
+
+// language=PostgreSQL
+const updateOrder = `UPDATE orders SET status = $1, accrual = $2 WHERE id = $3`
+
+func (s *PostgresStorage) UpdateOrders(ctx context.Context, orderID int, status types.OrderStatus, accrual int) error {
+	_, err := s.conn.Exec(ctx, updateOrder, status, accrual, orderID)
+
+	return err
 }
 
 // language=PostgreSQL

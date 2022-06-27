@@ -29,8 +29,8 @@ const AuthUserID ContextKey = "userID"
 
 var ErrUsernameTaken = errors.New("this username is already taken")
 
-func NewUserService(storage storage.Storage, jwtKey string) UsersService {
-	return UsersService{
+func NewUserService(storage storage.Storage, jwtKey string) *UsersService {
+	return &UsersService{
 		storage: storage,
 		jwtKey:  []byte(jwtKey),
 	}

@@ -15,10 +15,10 @@ import (
 )
 
 type UsersController struct {
-	service services.UsersService
+	service *services.UsersService
 }
 
-func NewUserController(service services.UsersService) UsersController {
+func NewUserController(service *services.UsersService) UsersController {
 	return UsersController{service: service}
 }
 

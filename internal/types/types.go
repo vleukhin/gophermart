@@ -9,11 +9,11 @@ type (
 		Password string
 	}
 	Order struct {
-		ID         int       `json:"number"`
-		UserID     int       `json:"-"`
-		Status     string    `json:"status"`
-		Accrual    int       `json:"accrual,omitempty"`
-		UploadedAt time.Time `json:"uploaded_at"`
+		ID         int         `json:"number"`
+		UserID     int         `json:"-"`
+		Status     OrderStatus `json:"status"`
+		Accrual    int         `json:"accrual,omitempty"`
+		UploadedAt time.Time   `json:"uploaded_at"`
 	}
 	OrderStatus string
 )
