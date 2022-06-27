@@ -11,3 +11,11 @@ services:
       POSTGRES_DATABASE: praktikum
     volumes:
       - ./.data/postgres/:/var/lib/postgresql/data:cached
+
+  accrual:
+    build:
+      dockerfile: ./cmd/accrual/Dockerfile
+    environment:
+      ADDR: localhost:8888
+    ports:
+      - '8888:8888'
