@@ -10,9 +10,8 @@ import (
 )
 
 type OrdersController struct {
-	usersService   *services.UsersService
-	ordersService  *services.OrdersService
-	accrualService *services.AccrualService
+	usersService  *services.UsersService
+	ordersService *services.OrdersService
 }
 
 func NewOrdersController(usersService *services.UsersService, ordersService *services.OrdersService) OrdersController {

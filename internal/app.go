@@ -17,6 +17,7 @@ type AppConfig struct {
 	DatabaseURI string `env:"DATABASE_URI"`
 	LogLevel    string `env:"LOG_LEVEL" envDefault:"debug"`
 	JwtKey      string `env:"JWT_KEY"`
+	AccrualAddr string `env:"ACCRUAL_SYSTEM_ADDRESS" envDefault:"http://localhost:8888"`
 }
 
 type Application struct {
@@ -36,12 +37,14 @@ func (cfg *AppConfig) Parse() error {
 	addr := pflag.StringP("addr", "a", cfg.Addr, "Server address")
 	logLevel := pflag.StringP("log-level", "l", cfg.LogLevel, "Application log level")
 	jwtKey := pflag.StringP("jwt-key", "j", cfg.JwtKey, "JWT key for authentication")
+	accrualAddr := pflag.StringP("acc-addr", "r", cfg.AccrualAddr, "Accrual system address")
 
 	pflag.Parse()
 
 	cfg.Addr = *addr
 	cfg.LogLevel = *logLevel
 	cfg.JwtKey = *jwtKey
+	cfg.AccrualAddr = *accrualAddr
 
 	return nil
 }
@@ -56,7 +59,7 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 
 	userService := services.NewUserService(db, cfg.JwtKey)
 	ordersService := services.NewOrdersService(db, ordersCh)
-	accrualService := services.NewAccrualService(ordersService, ordersCh)
+	accrualService := services.NewAccrualService(cfg.AccrualAddr, ordersService, ordersCh)
 
 	go accrualService.Run(context.Background())
 
