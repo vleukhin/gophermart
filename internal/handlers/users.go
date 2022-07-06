@@ -4,21 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/vleukhin/gophermart/internal/services/user"
 	"io"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/rs/zerolog/log"
-
-	"github.com/vleukhin/gophermart/internal/services"
 )
 
 type UsersController struct {
-	service *services.UsersService
+	service *user.UsersService
 }
 
-func NewUserController(service *services.UsersService) UsersController {
+func NewUserController(service *user.UsersService) UsersController {
 	return UsersController{service: service}
 }
 
@@ -59,7 +58,7 @@ func (c UsersController) Register(w http.ResponseWriter, r *http.Request) {
 
 	tokenString, ttl, err := c.service.Register(r.Context(), params.Login, params.Password)
 	if err != nil {
-		if errors.Is(err, services.ErrUsernameTaken) {
+		if errors.Is(err, user.ErrUsernameTaken) {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}
@@ -137,7 +136,7 @@ func (c UsersController) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), services.AuthUserID, claims.UserID))
+		r = r.WithContext(context.WithValue(r.Context(), user.AuthUserID, claims.UserID))
 
 		next.ServeHTTP(w, r)
 	})

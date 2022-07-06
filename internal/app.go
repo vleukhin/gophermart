@@ -5,8 +5,9 @@ import (
 	"github.com/caarlos0/env"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/pflag"
-	"github.com/vleukhin/gophermart/internal/services"
 	"github.com/vleukhin/gophermart/internal/services/accrual"
+	"github.com/vleukhin/gophermart/internal/services/orders"
+	"github.com/vleukhin/gophermart/internal/services/user"
 	"github.com/vleukhin/gophermart/internal/storage"
 	"net/http"
 	"time"
@@ -23,8 +24,8 @@ type AppConfig struct {
 type Application struct {
 	cfg            *AppConfig
 	db             storage.Storage
-	UsersService   *services.UsersService
-	OrdersService  *services.OrdersService
+	UsersService   *user.UsersService
+	OrdersService  *orders.Service
 	AccrualService accrual.Service
 }
 
@@ -56,8 +57,8 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 	}
 
 	accrualService := accrual.NewDefaultAccrualService(cfg.AccrualAddr)
-	userService := services.NewUserService(db, cfg.JwtKey)
-	ordersService := services.NewOrdersService(db, accrualService)
+	userService := user.NewUserService(db, cfg.JwtKey)
+	ordersService := orders.NewOrdersService(db, accrualService)
 
 	app := Application{
 		cfg:            cfg,
@@ -82,6 +83,7 @@ func (app *Application) Run(err chan<- error) {
 
 func (app *Application) ShutDown() error {
 	app.db.ShutDown()
+	app.OrdersService.ShutDown()
 	return nil
 }
 

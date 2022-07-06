@@ -24,3 +24,7 @@ const (
 	OrderStatusInvalid    OrderStatus = "INVALID"
 	OrderStatusProcessed  OrderStatus = "PROCESSED"
 )
+
+func (o Order) isNew() bool {
+	return o.Status == OrderStatusNew
+}

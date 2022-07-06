@@ -3,18 +3,19 @@ package handlers
 import (
 	"encoding/json"
 	"github.com/rs/zerolog/log"
-	"github.com/vleukhin/gophermart/internal/services"
+	"github.com/vleukhin/gophermart/internal/services/orders"
+	"github.com/vleukhin/gophermart/internal/services/user"
 	"io"
 	"io/ioutil"
 	"net/http"
 )
 
 type OrdersController struct {
-	usersService  *services.UsersService
-	ordersService *services.OrdersService
+	usersService  *user.UsersService
+	ordersService *orders.Service
 }
 
-func NewOrdersController(usersService *services.UsersService, ordersService *services.OrdersService) OrdersController {
+func NewOrdersController(usersService *user.UsersService, ordersService *orders.Service) OrdersController {
 	return OrdersController{
 		usersService:  usersService,
 		ordersService: ordersService,
@@ -101,6 +102,7 @@ func (c OrdersController) Create(w http.ResponseWriter, r *http.Request) {
 	if existsOrder != nil {
 		if existsOrder.UserID == userID {
 			w.WriteHeader(http.StatusOK)
+			c.ordersService.Process(existsOrder.ID)
 			return
 		} else {
 			w.WriteHeader(http.StatusConflict)
