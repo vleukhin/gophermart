@@ -6,8 +6,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/pflag"
 	"github.com/vleukhin/gophermart/internal/services"
+	"github.com/vleukhin/gophermart/internal/services/accrual"
 	"github.com/vleukhin/gophermart/internal/storage"
-	"github.com/vleukhin/gophermart/internal/types"
 	"net/http"
 	"time"
 )
@@ -25,7 +25,7 @@ type Application struct {
 	db             storage.Storage
 	UsersService   *services.UsersService
 	OrdersService  *services.OrdersService
-	AccrualService *services.AccrualService
+	AccrualService accrual.Service
 }
 
 func (cfg *AppConfig) Parse() error {
@@ -55,13 +55,9 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 		return nil, err
 	}
 
-	ordersCh := make(chan types.Order)
-
+	accrualService := accrual.NewDefaultAccrualService(cfg.AccrualAddr)
 	userService := services.NewUserService(db, cfg.JwtKey)
-	ordersService := services.NewOrdersService(db, ordersCh)
-	accrualService := services.NewAccrualService(cfg.AccrualAddr, ordersService, ordersCh)
-
-	go accrualService.Run(context.Background())
+	ordersService := services.NewOrdersService(db, accrualService)
 
 	app := Application{
 		cfg:            cfg,

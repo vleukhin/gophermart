@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"github.com/rs/zerolog/log"
+	"github.com/vleukhin/gophermart/internal/services/accrual"
 	"github.com/vleukhin/gophermart/internal/storage"
 	"github.com/vleukhin/gophermart/internal/types"
 	"strconv"
@@ -12,14 +13,15 @@ type OrdersService struct {
 	storage           storage.Storage
 	processCh         chan types.Order
 	processedOrdersCh chan OrderInfo
+	accrualService    accrual.Service
 }
 
-func NewOrdersService(storage storage.Storage, processCh chan types.Order) *OrdersService {
+func NewOrdersService(storage storage.Storage, accrualService accrual.Service) *OrdersService {
 	processedOrdersCh := make(chan OrderInfo, 1)
 
 	service := &OrdersService{
 		storage:           storage,
-		processCh:         processCh,
+		accrualService:    accrualService,
 		processedOrdersCh: processedOrdersCh,
 	}
 

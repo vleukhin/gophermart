@@ -16,6 +16,7 @@ services:
     build:
       dockerfile: ./cmd/accrual/Dockerfile
     environment:
-      ADDR: localhost:8888
+      ADDR: 0.0.0.0:8888
+      DATABASE_URI: postgres://postgres:postgres@postgres:5455/accrual?sslmode=disable
     ports:
       - '8888:8888'
