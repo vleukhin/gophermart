@@ -12,7 +12,7 @@ type (
 		ID         string      `json:"number"`
 		UserID     int         `json:"-"`
 		Status     OrderStatus `json:"status"`
-		Accrual    int         `json:"accrual,omitempty"`
+		Accrual    float32     `json:"accrual,omitempty"`
 		UploadedAt time.Time   `json:"uploaded_at"`
 	}
 	OrderStatus string

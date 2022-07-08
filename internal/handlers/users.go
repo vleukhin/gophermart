@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/vleukhin/gophermart/internal/services/user"
+	"github.com/vleukhin/gophermart/internal/services/users"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,10 +14,10 @@ import (
 )
 
 type UsersController struct {
-	service *user.UsersService
+	service *users.Service
 }
 
-func NewUserController(service *user.UsersService) UsersController {
+func NewUserController(service *users.Service) UsersController {
 	return UsersController{service: service}
 }
 
@@ -58,11 +58,11 @@ func (c UsersController) Register(w http.ResponseWriter, r *http.Request) {
 
 	tokenString, ttl, err := c.service.Register(r.Context(), params.Login, params.Password)
 	if err != nil {
-		if errors.Is(err, user.ErrUsernameTaken) {
+		if errors.Is(err, users.ErrUsernameTaken) {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}
-		errorLogger.Err(err).Msg("Failed to create user")
+		errorLogger.Err(err).Msg("Failed to create users")
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
@@ -105,7 +105,7 @@ func (c UsersController) Login(w http.ResponseWriter, r *http.Request) {
 
 	tokenString, ttl, err := c.service.Login(r.Context(), params.Login, params.Password)
 	if err != nil {
-		errorLogger.Err(err).Msg("Failed to log in user")
+		errorLogger.Err(err).Msg("Failed to log in users")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -136,7 +136,7 @@ func (c UsersController) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), user.AuthUserID, claims.UserID))
+		r = r.WithContext(context.WithValue(r.Context(), users.AuthUserID, claims.UserID))
 
 		next.ServeHTTP(w, r)
 	})

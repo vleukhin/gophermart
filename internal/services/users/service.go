@@ -1,4 +1,4 @@
-package user
+package users
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 )
 
 type (
-	UsersService struct {
+	Service struct {
 		storage storage.Storage
 		jwtKey  []byte
 	}
@@ -29,14 +29,14 @@ const AuthUserID ContextKey = "userID"
 
 var ErrUsernameTaken = errors.New("this username is already taken")
 
-func NewUserService(storage storage.Storage, jwtKey string) *UsersService {
-	return &UsersService{
+func NewService(storage storage.Storage, jwtKey string) *Service {
+	return &Service{
 		storage: storage,
 		jwtKey:  []byte(jwtKey),
 	}
 }
 
-func (s UsersService) Register(ctx context.Context, name, password string) (string, time.Time, error) {
+func (s *Service) Register(ctx context.Context, name, password string) (string, time.Time, error) {
 	passwordHash, err := s.hashPassword(password)
 	if err != nil {
 		return "", time.Now(), err
@@ -61,7 +61,7 @@ func (s UsersService) Register(ctx context.Context, name, password string) (stri
 	return s.authorize(user.ID)
 }
 
-func (s UsersService) Login(ctx context.Context, name, password string) (string, time.Time, error) {
+func (s *Service) Login(ctx context.Context, name, password string) (string, time.Time, error) {
 	user, err := s.storage.GetUser(ctx, name)
 	if err != nil {
 		return "", time.Now(), err
@@ -74,7 +74,7 @@ func (s UsersService) Login(ctx context.Context, name, password string) (string,
 	return s.authorize(user.ID)
 }
 
-func (s UsersService) authorize(id int) (string, time.Time, error) {
+func (s *Service) authorize(id int) (string, time.Time, error) {
 	ttl := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		UserID: id,
@@ -92,7 +92,7 @@ func (s UsersService) authorize(id int) (string, time.Time, error) {
 	return tokenString, ttl, nil
 }
 
-func (s UsersService) CheckAuth(r *http.Request) (*Claims, error) {
+func (s *Service) CheckAuth(r *http.Request) (*Claims, error) {
 	c, err := r.Cookie("token")
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (s UsersService) CheckAuth(r *http.Request) (*Claims, error) {
 	return claims, nil
 }
 
-func (s UsersService) GetAuthUserID(ctx context.Context) int {
+func (s *Service) GetAuthUserID(ctx context.Context) int {
 	value := ctx.Value(AuthUserID)
 	if id, ok := value.(int); ok {
 		return id
@@ -123,12 +123,12 @@ func (s UsersService) GetAuthUserID(ctx context.Context) int {
 	return 0
 }
 
-func (s UsersService) hashPassword(password string) (string, error) {
+func (s *Service) hashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
 }
 
-func (s UsersService) checkPasswordHash(password, hash string) bool {
+func (s *Service) checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }

@@ -167,10 +167,22 @@ func (s *PostgresStorage) GetUserOrders(ctx context.Context, userID int) ([]type
 // language=PostgreSQL
 const updateOrder = `UPDATE orders SET status = $1, accrual = $2 WHERE id = $3`
 
-func (s *PostgresStorage) UpdateOrder(ctx context.Context, orderID string, status types.OrderStatus, accrual int) error {
+func (s *PostgresStorage) UpdateOrder(ctx context.Context, orderID string, status types.OrderStatus, accrual float32) error {
 	_, err := s.pool.Exec(ctx, updateOrder, status, accrual, orderID)
 
 	return err
+}
+
+func (s *PostgresStorage) CreateWithdraw(ctx context.Context, userID int, amount float32) error {
+	return nil
+}
+
+func (s *PostgresStorage) GetWithDrawAmount(ctx context.Context) (float32, error) {
+	return 0, nil
+}
+
+func (s *PostgresStorage) GetBalance(ctx context.Context, userID int) (float32, error) {
+	return 0, nil
 }
 
 // language=PostgreSQL
@@ -188,7 +200,7 @@ const createOrdersTable = `
 		id varchar(255) constraint orders_pk primary key,
 		user_id integer,
 		status varchar(255) not null,
-		accrual integer not null,
+		accrual float8 not null,
 		uploaded_at timestamp not null
 	)
 `

@@ -6,8 +6,9 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/pflag"
 	"github.com/vleukhin/gophermart/internal/services/accrual"
+	"github.com/vleukhin/gophermart/internal/services/balance"
 	"github.com/vleukhin/gophermart/internal/services/orders"
-	"github.com/vleukhin/gophermart/internal/services/user"
+	"github.com/vleukhin/gophermart/internal/services/users"
 	"github.com/vleukhin/gophermart/internal/storage"
 	"net/http"
 	"time"
@@ -24,8 +25,9 @@ type AppConfig struct {
 type Application struct {
 	cfg            *AppConfig
 	db             storage.Storage
-	UsersService   *user.UsersService
+	UsersService   *users.Service
 	OrdersService  *orders.Service
+	BalanceService *balance.Service
 	AccrualService accrual.Service
 }
 
@@ -57,8 +59,9 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 	}
 
 	accrualService := accrual.NewDefaultAccrualService(cfg.AccrualAddr)
-	userService := user.NewUserService(db, cfg.JwtKey)
-	ordersService := orders.NewOrdersService(db, accrualService)
+	userService := users.NewService(db, cfg.JwtKey)
+	ordersService := orders.NewService(db, accrualService)
+	balanceService := balance.NewService(db)
 
 	app := Application{
 		cfg:            cfg,
@@ -66,6 +69,7 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 		UsersService:   userService,
 		OrdersService:  ordersService,
 		AccrualService: accrualService,
+		BalanceService: balanceService,
 	}
 
 	err = app.migrate()

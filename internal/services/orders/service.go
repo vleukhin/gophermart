@@ -18,7 +18,7 @@ type Service struct {
 	accrualService accrual.Service
 }
 
-func NewOrdersService(storage storage.Storage, accrualService accrual.Service) *Service {
+func NewService(storage storage.Storage, accrualService accrual.Service) *Service {
 	ordersCh := make(chan job)
 	ordersInfoCh := make(chan accrual.OrderInfo)
 	for i := 0; i < workersNumber; i++ {
@@ -93,7 +93,7 @@ func (s *Service) ValidateOrderID(id string) bool {
 	return true
 }
 
-func (s *Service) MarkOrderAsProcessed(ctx context.Context, orderID string, accrual int) error {
+func (s *Service) MarkOrderAsProcessed(ctx context.Context, orderID string, accrual float32) error {
 	return s.storage.UpdateOrder(ctx, orderID, types.OrderStatusProcessed, accrual)
 }
 

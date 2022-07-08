@@ -6,8 +6,8 @@ type (
 	}
 
 	OrderInfo struct {
-		OrderID string `json:"order"`
-		Status  string `json:"status"`
-		Accrual int    `json:"accrual"`
+		OrderID string  `json:"order"`
+		Status  string  `json:"status"`
+		Accrual float32 `json:"accrual"`
 	}
 )

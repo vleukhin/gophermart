@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"github.com/rs/zerolog/log"
 	"github.com/vleukhin/gophermart/internal/services/orders"
-	"github.com/vleukhin/gophermart/internal/services/user"
+	"github.com/vleukhin/gophermart/internal/services/users"
 	"io"
 	"io/ioutil"
 	"net/http"
 )
 
 type OrdersController struct {
-	usersService  *user.UsersService
+	usersService  *users.Service
 	ordersService *orders.Service
 }
 
-func NewOrdersController(usersService *user.UsersService, ordersService *orders.Service) OrdersController {
+func NewOrdersController(usersService *users.Service, ordersService *orders.Service) OrdersController {
 	return OrdersController{
 		usersService:  usersService,
 		ordersService: ordersService,
@@ -37,19 +37,19 @@ func (c OrdersController) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}(r.Body)
 
-	orders, err := c.ordersService.List(r.Context(), userID)
+	ordersList, err := c.ordersService.List(r.Context(), userID)
 	if err != nil {
-		errorLogger.Err(err).Msg("Failed to get orders")
+		errorLogger.Err(err).Msg("Failed to get ordersList")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if len(orders) == 0 {
+	if len(ordersList) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	response, err := json.Marshal(orders)
+	response, err := json.Marshal(ordersList)
 	if err != nil {
 		errorLogger.Err(err).Msg("Failed to marshal JSON")
 		w.WriteHeader(http.StatusInternalServerError)
