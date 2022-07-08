@@ -6,7 +6,6 @@ import (
 	"github.com/vleukhin/gophermart/internal/services/accrual"
 	"github.com/vleukhin/gophermart/internal/storage"
 	"github.com/vleukhin/gophermart/internal/types"
-	"strconv"
 )
 
 const workersNumber = 2
@@ -16,6 +15,7 @@ type Service struct {
 	ordersCh       chan job
 	ordersInfoCh   chan accrual.OrderInfo
 	accrualService accrual.Service
+	validator      OrderValidator
 }
 
 func NewService(storage storage.Storage, accrualService accrual.Service) *Service {
@@ -31,6 +31,7 @@ func NewService(storage storage.Storage, accrualService accrual.Service) *Servic
 		accrualService: accrualService,
 		ordersCh:       ordersCh,
 		ordersInfoCh:   ordersInfoCh,
+		validator:      luhnValidator{},
 	}
 
 	go service.updateProcessedOrders()
@@ -80,17 +81,12 @@ func (s *Service) Process(orderID string) {
 	s.ordersCh <- newJob(orderID, 10)
 }
 
-func (s *Service) GetById(ctx context.Context, orderID string) (*types.Order, error) {
+func (s *Service) GetByID(ctx context.Context, orderID string) (*types.Order, error) {
 	return s.storage.GetOrderByID(ctx, orderID)
 }
 
 func (s *Service) ValidateOrderID(id string) bool {
-	_, err := strconv.Atoi(id)
-	if err != nil {
-		return false
-	}
-
-	return true
+	return s.validator.OrderNumberIsValid(id)
 }
 
 func (s *Service) MarkOrderAsProcessed(ctx context.Context, orderID string, accrual float32) error {

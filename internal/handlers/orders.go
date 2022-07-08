@@ -90,9 +90,10 @@ func (c OrdersController) Create(w http.ResponseWriter, r *http.Request) {
 
 	if !c.ordersService.ValidateOrderID(orderID) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
 	}
 
-	existsOrder, err := c.ordersService.GetById(r.Context(), orderID)
+	existsOrder, err := c.ordersService.GetByID(r.Context(), orderID)
 	if err != nil {
 		errorLogger.Err(err).Msg("Failed to get order")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -118,5 +119,4 @@ func (c OrdersController) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	return
 }

@@ -30,7 +30,7 @@ func (s *Service) Balance(ctx context.Context, userID int) (types.Balance, error
 	}
 
 	return types.Balance{
-		Current:   accrual,
+		Current:   accrual - withdrawn,
 		Withdrawn: withdrawn,
 	}, nil
 }

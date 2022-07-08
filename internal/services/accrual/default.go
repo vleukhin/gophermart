@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/rs/zerolog/log"
 )
 
 type DefaultAccrual struct {
@@ -33,12 +31,7 @@ func (s DefaultAccrual) GetOrderInfo(orderID string) (OrderInfo, error) {
 		return info, err
 	}
 
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to close response body")
-		}
-	}(response.Body)
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		return info, errors.New("bad status code: " + strconv.Itoa(response.StatusCode))

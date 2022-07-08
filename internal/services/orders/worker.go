@@ -1,7 +1,6 @@
 package orders
 
 import (
-	"errors"
 	"fmt"
 	"github.com/rs/zerolog/log"
 	"github.com/vleukhin/gophermart/internal/services/accrual"
@@ -59,7 +58,7 @@ func (j *job) retry() error {
 	}
 	j.Try++
 	if j.Try >= j.MaxTries {
-		return errors.New(fmt.Sprintf("order info job failed after %d tries", j.Try))
+		return fmt.Errorf("order info job failed after %d tries", j.Try)
 	}
 
 	return nil
