@@ -38,13 +38,13 @@ func (s *PostgresStorage) Ping(ctx context.Context) error {
 }
 
 // language=PostgreSQL
-const createUserSQL = `
+const createUserQuery = `
 	INSERT INTO users (name, password)
 	VALUES ($1, $2) ON CONFLICT DO NOTHING 
 `
 
 func (s *PostgresStorage) CreateUser(ctx context.Context, name string, password string) (bool, error) {
-	t, err := s.pool.Exec(ctx, createUserSQL, name, password)
+	t, err := s.pool.Exec(ctx, createUserQuery, name, password)
 
 	if err != nil {
 		log.Debug().Err(err)
@@ -59,12 +59,12 @@ func (s *PostgresStorage) CreateUser(ctx context.Context, name string, password 
 }
 
 // language=PostgreSQL
-const getUserSQL = `SELECT id, name, password FROM users WHERE name = $1`
+const getUserQuery = `SELECT id, name, password FROM users WHERE name = $1`
 
 func (s *PostgresStorage) GetUser(ctx context.Context, name string) (*types.User, error) {
 	var user types.User
 
-	row := s.pool.QueryRow(ctx, getUserSQL, name)
+	row := s.pool.QueryRow(ctx, getUserQuery, name)
 	err := row.Scan(&user.ID, &user.Name, &user.Password)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -78,12 +78,12 @@ func (s *PostgresStorage) GetUser(ctx context.Context, name string) (*types.User
 }
 
 // language=PostgreSQL
-const getUserByIDSQL = `SELECT id, name, password FROM users WHERE id = $1`
+const getUserByIDQuery = `SELECT id, name, password FROM users WHERE id = $1`
 
 func (s *PostgresStorage) GetUserByID(ctx context.Context, id int) (*types.User, error) {
 	var user types.User
 
-	row := s.pool.QueryRow(ctx, getUserByIDSQL, id)
+	row := s.pool.QueryRow(ctx, getUserByIDQuery, id)
 	err := row.Scan(&user.ID, &user.Name, &user.Password)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -97,7 +97,7 @@ func (s *PostgresStorage) GetUserByID(ctx context.Context, id int) (*types.User,
 }
 
 // language=PostgreSQL
-const createOrderSQL = `
+const createOrderQuery = `
 	INSERT INTO orders (id, user_id, status, accrual, uploaded_at)
 	VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING 
 `
@@ -110,25 +110,20 @@ func (s *PostgresStorage) CreateOrder(ctx context.Context, userID int, orderID s
 		UploadedAt: time.Now(),
 	}
 
-	_, err := s.pool.Exec(ctx, createOrderSQL, order.ID, order.UserID, order.Status, 0, order.UploadedAt)
+	_, err := s.pool.Exec(ctx, createOrderQuery, order.ID, order.UserID, order.Status, 0, order.UploadedAt)
 
-	if err != nil {
-		log.Debug().Err(err)
-		return order, err
-	}
-
-	return order, nil
+	return order, err
 }
 
 // language=PostgreSQL
-const getOrderByID = `SELECT user_id, status, accrual, uploaded_at FROM orders WHERE id = $1`
+const getOrderByIDQuery = `SELECT user_id, status, accrual, uploaded_at FROM orders WHERE id = $1`
 
 func (s *PostgresStorage) GetOrderByID(ctx context.Context, id string) (*types.Order, error) {
 	order := types.Order{
 		ID: id,
 	}
 
-	row := s.pool.QueryRow(ctx, getOrderByID, id)
+	row := s.pool.QueryRow(ctx, getOrderByIDQuery, id)
 	err := row.Scan(&order.UserID, &order.Status, &order.Accrual, &order.UploadedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -142,11 +137,11 @@ func (s *PostgresStorage) GetOrderByID(ctx context.Context, id string) (*types.O
 }
 
 // language=PostgreSQL
-const getUserOrders = `SELECT id, user_id, status, accrual, uploaded_at FROM orders WHERE user_id = $1`
+const getUserOrdersQuery = `SELECT id, user_id, status, accrual, uploaded_at FROM orders WHERE user_id = $1`
 
 func (s *PostgresStorage) GetUserOrders(ctx context.Context, userID int) ([]types.Order, error) {
 	var result []types.Order
-	rows, err := s.pool.Query(ctx, getUserOrders, userID)
+	rows, err := s.pool.Query(ctx, getUserOrdersQuery, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -165,28 +160,76 @@ func (s *PostgresStorage) GetUserOrders(ctx context.Context, userID int) ([]type
 }
 
 // language=PostgreSQL
-const updateOrder = `UPDATE orders SET status = $1, accrual = $2 WHERE id = $3`
+const updateOrderQuery = `UPDATE orders SET status = $1, accrual = $2 WHERE id = $3`
 
 func (s *PostgresStorage) UpdateOrder(ctx context.Context, orderID string, status types.OrderStatus, accrual float32) error {
-	_, err := s.pool.Exec(ctx, updateOrder, status, accrual, orderID)
-
+	_, err := s.pool.Exec(ctx, updateOrderQuery, status, accrual, orderID)
 	return err
 }
 
-func (s *PostgresStorage) CreateWithdraw(ctx context.Context, userID int, amount float32) error {
-	return nil
-}
+// language=PostgreSQL
+const createWithdrawSQL = `INSERT INTO withdrawals (user_id, order_id, sum, processed_at)  VALUES ($1, $2, $3, $4)`
 
-func (s *PostgresStorage) GetWithDrawAmount(ctx context.Context) (float32, error) {
-	return 0, nil
-}
-
-func (s *PostgresStorage) GetBalance(ctx context.Context, userID int) (float32, error) {
-	return 0, nil
+func (s *PostgresStorage) CreateWithdraw(ctx context.Context, userID int, orderID string, sum float32) error {
+	_, err := s.pool.Exec(ctx, createWithdrawSQL, userID, orderID, sum, time.Now())
+	return err
 }
 
 // language=PostgreSQL
-const createUsersTable = `
+const getWithdrawalsSumQuery = `SELECT COALESCE(sum(sum), 0) as sum FROM withdrawals WHERE user_id = $1`
+
+func (s *PostgresStorage) GetWithdrawalsSum(ctx context.Context, userID int) (float32, error) {
+	var sum float32
+
+	row := s.pool.QueryRow(ctx, getWithdrawalsSumQuery, userID)
+	err := row.Scan(&sum)
+	if err != nil && err != pgx.ErrNoRows {
+		return 0, err
+	}
+
+	return sum, nil
+}
+
+// language=PostgreSQL
+const getAccrualSumQuery = `SELECT COALESCE(sum(accrual), 0) as balance FROM orders WHERE user_id = $1 AND status = $2`
+
+func (s *PostgresStorage) GetAccrualSum(ctx context.Context, userID int) (float32, error) {
+	var balance float32
+
+	row := s.pool.QueryRow(ctx, getAccrualSumQuery, userID, types.OrderStatusProcessed)
+	err := row.Scan(&balance)
+	if err != nil && err != pgx.ErrNoRows {
+		return 0, err
+	}
+
+	return balance, nil
+}
+
+// language=PostgreSQL
+const getUserWithdrawalsQuery = `SELECT id, user_id, order_id, sum, processed_at FROM withdrawals WHERE user_id = $1`
+
+func (s *PostgresStorage) GetWithdrawals(ctx context.Context, userID int) ([]types.Withdraw, error) {
+	var result []types.Withdraw
+	rows, err := s.pool.Query(ctx, getUserWithdrawalsQuery, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		withdraw := types.Withdraw{}
+		err := rows.Scan(&withdraw.ID, &withdraw.UserID, &withdraw.OrderID, &withdraw.Sum, &withdraw.ProcessedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, withdraw)
+	}
+
+	return result, nil
+}
+
+// language=PostgreSQL
+const createUsersTableQuery = `
 	CREATE TABLE IF NOT EXISTS users (
 		id serial constraint users_pk primary key,
 		name varchar(255) not null unique,
@@ -195,7 +238,7 @@ const createUsersTable = `
 `
 
 // language=PostgreSQL
-const createOrdersTable = `
+const createOrdersTableQuery = `
 	CREATE TABLE IF NOT EXISTS orders (
 		id varchar(255) constraint orders_pk primary key,
 		user_id integer,
@@ -205,10 +248,22 @@ const createOrdersTable = `
 	)
 `
 
+// language=PostgreSQL
+const createWithdrawalsTableQuery = `
+	CREATE TABLE IF NOT EXISTS withdrawals (
+		id serial constraint withdraw_pk primary key,
+		user_id integer,
+		order_id varchar(255),
+		sum float8 not null,
+		processed_at timestamp not null
+	)
+`
+
 func (s *PostgresStorage) Migrate(ctx context.Context) error {
 	migrations := []string{
-		createUsersTable,
-		createOrdersTable,
+		createUsersTableQuery,
+		createOrdersTableQuery,
+		createWithdrawalsTableQuery,
 	}
 
 	for _, m := range migrations {

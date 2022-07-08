@@ -30,7 +30,8 @@ type OrdersStorage interface {
 }
 
 type BalanceStorage interface {
-	GetBalance(ctx context.Context, userID int) (float32, error)
-	CreateWithdraw(ctx context.Context, userID int, amount float32) error
-	GetWithDrawAmount(ctx context.Context) (float32, error)
+	GetAccrualSum(ctx context.Context, userID int) (float32, error)
+	CreateWithdraw(ctx context.Context, userID int, orderID string, sum float32) error
+	GetWithdrawalsSum(ctx context.Context, userID int) (float32, error)
+	GetWithdrawals(ctx context.Context, userID int) ([]types.Withdraw, error)
 }

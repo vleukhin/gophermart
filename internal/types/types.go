@@ -16,6 +16,17 @@ type (
 		UploadedAt time.Time   `json:"uploaded_at"`
 	}
 	OrderStatus string
+	Withdraw    struct {
+		ID          int       `json:"-"`
+		UserID      int       `json:"-"`
+		OrderID     string    `json:"order"`
+		Sum         float32   `json:"sum"`
+		ProcessedAt time.Time `json:"processed_at"`
+	}
+	Balance struct {
+		Current   float32 `json:"current"`
+		Withdrawn float32 `json:"withdrawn"`
+	}
 )
 
 const (
