@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -25,13 +24,12 @@ func NewOrdersController(usersService *users.Service, ordersService *orders.Serv
 }
 
 func (c OrdersController) List(w http.ResponseWriter, r *http.Request) {
-	userID := c.usersService.GetAuthUserID(r.Context())
+	errorLogger := log.Error().Str("method", "OrdersController::List")
+	userID := checkAuth(w, r, c.usersService)
 	if userID == 0 {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	errorLogger := log.Error().Str("method", "OrdersController::List")
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
@@ -51,29 +49,16 @@ func (c OrdersController) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := json.Marshal(ordersList)
-	if err != nil {
-		errorLogger.Err(err).Msg("Failed to marshal JSON")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	_, err = w.Write(response)
-	if err != nil {
-		errorLogger.Err(err).Msg("Failed to write response body")
-		w.WriteHeader(http.StatusInternalServerError)
-	}
+	jsonResponse(w, ordersList, errorLogger)
 }
 
 func (c OrdersController) Create(w http.ResponseWriter, r *http.Request) {
-	userID := c.usersService.GetAuthUserID(r.Context())
+	errorLogger := log.Error().Str("method", "OrdersController::Create")
+	userID := checkAuth(w, r, c.usersService)
 	if userID == 0 {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	errorLogger := log.Error().Str("method", "OrdersController::Create")
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
@@ -97,8 +82,7 @@ func (c OrdersController) Create(w http.ResponseWriter, r *http.Request) {
 
 	existsOrder, err := c.ordersService.GetByID(r.Context(), orderID)
 	if err != nil {
-		errorLogger.Err(err).Msg("Failed to get order")
-		w.WriteHeader(http.StatusInternalServerError)
+		errorResponse(w, err, errorLogger)
 		return
 	}
 
@@ -115,8 +99,7 @@ func (c OrdersController) Create(w http.ResponseWriter, r *http.Request) {
 
 	err = c.ordersService.Create(r.Context(), userID, orderID)
 	if err != nil {
-		errorLogger.Err(err).Msg("Failed to create order")
-		w.WriteHeader(http.StatusInternalServerError)
+		errorResponse(w, err, errorLogger)
 		return
 	}
 

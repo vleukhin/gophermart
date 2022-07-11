@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/rs/zerolog/log"
@@ -67,13 +68,7 @@ func (c UsersController) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    tokenString,
-		Expires:  ttl,
-		Path:     "/",
-		HttpOnly: true,
-	})
+	c.authCookie(w, tokenString, ttl)
 }
 
 func (c UsersController) Login(w http.ResponseWriter, r *http.Request) {
@@ -88,8 +83,7 @@ func (c UsersController) Login(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Error().Msg(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
+		errorResponse(w, err, errorLogger)
 		return
 	}
 
@@ -111,9 +105,13 @@ func (c UsersController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	c.authCookie(w, tokenString, ttl)
+}
+
+func (c UsersController) authCookie(w http.ResponseWriter, token string, ttl time.Time) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
-		Value:    tokenString,
+		Value:    token,
 		Expires:  ttl,
 		Path:     "/",
 		HttpOnly: true,
