@@ -1,14 +1,13 @@
 package main
 
 import (
+	"context"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/vleukhin/gophermart/internal"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
-	"github.com/vleukhin/gophermart/internal"
 )
 
 func main() {
@@ -26,7 +25,10 @@ func main() {
 
 	zerolog.SetGlobalLevel(logLevel)
 
-	app, err := internal.NewApplication(cfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	app, err := internal.NewApplication(ctx, cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create application")
 		os.Exit(1)

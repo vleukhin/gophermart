@@ -40,6 +40,7 @@ func (cfg *AppConfig) Parse() error {
 	}
 
 	addr := pflag.StringP("addr", "a", cfg.Addr, "Server address")
+	dsn := pflag.StringP("dsn", "d", cfg.DatabaseURI, "Database connection URI")
 	logLevel := pflag.StringP("log-level", "l", cfg.LogLevel, "Application log level")
 	jwtKey := pflag.StringP("jwt-key", "j", cfg.JwtKey, "JWT key for authentication")
 	accrualAddr := pflag.StringP("acc-addr", "r", cfg.AccrualAddr, "Accrual system address")
@@ -47,6 +48,7 @@ func (cfg *AppConfig) Parse() error {
 	pflag.Parse()
 
 	cfg.Addr = *addr
+	cfg.DatabaseURI = *dsn
 	cfg.LogLevel = *logLevel
 	cfg.JwtKey = *jwtKey
 	cfg.AccrualAddr = *accrualAddr
@@ -54,7 +56,7 @@ func (cfg *AppConfig) Parse() error {
 	return nil
 }
 
-func NewApplication(cfg *AppConfig) (*Application, error) {
+func NewApplication(ctx context.Context, cfg *AppConfig) (*Application, error) {
 	db, err := storage.NewPostgresStorage(cfg.DatabaseURI, time.Second*2)
 	if err != nil {
 		return nil, err
@@ -62,7 +64,7 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 
 	accrualService := accrual.NewDefaultAccrualService(cfg.AccrualAddr)
 	userService := users.NewService(db, cfg.JwtKey)
-	ordersService := orders.NewService(db, accrualService)
+	ordersService := orders.NewService(ctx, db, accrualService)
 	balanceService := balance.NewService(db)
 
 	app := Application{
@@ -74,7 +76,7 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 		BalanceService: balanceService,
 	}
 
-	err = app.migrate()
+	err = app.migrate(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +95,6 @@ func (app *Application) ShutDown() error {
 	return nil
 }
 
-func (app *Application) migrate() error {
-	return app.Db.Migrate(context.TODO())
+func (app *Application) migrate(ctx context.Context) error {
+	return app.Db.Migrate(ctx)
 }

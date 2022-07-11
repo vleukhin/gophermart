@@ -29,7 +29,7 @@ type DefaultService struct {
 	validator      OrderValidator
 }
 
-func NewService(storage storage.Storage, accrualService accrual.Service) Service {
+func NewService(ctx context.Context, storage storage.Storage, accrualService accrual.Service) Service {
 	ordersCh := make(chan job)
 	ordersInfoCh := make(chan accrual.OrderInfo)
 	for i := 0; i < workersNumber; i++ {
@@ -45,30 +45,39 @@ func NewService(storage storage.Storage, accrualService accrual.Service) Service
 		validator:      luhnValidator{},
 	}
 
-	go service.updateProcessedOrders()
+	go service.updateProcessedOrders(ctx)
 
 	return service
 }
 
-func (s *DefaultService) updateProcessedOrders() {
-	ctx := context.TODO()
+func (s *DefaultService) updateProcessedOrders(ctx context.Context) {
 	var err error
-	for info := range s.ordersInfoCh {
-		switch info.Status {
-		case string(types.OrderStatusProcessed):
-			err = s.markOrderAsProcessed(ctx, info.OrderID, info.Accrual)
-		case string(types.OrderStatusInvalid):
-			err = s.markOrderAsInvalid(ctx, info.OrderID)
-		case string(types.OrderStatusProcessing):
-			err = s.markOrderAsProcessing(ctx, info.OrderID)
-		default:
-			log.Warn().Str("status", info.Status).Str("order", info.OrderID).Msg("Unknown order status")
-		}
 
-		if err != nil {
-			log.Error().Str("order", info.OrderID).Err(err).Msg("Failed to update order")
-			s.ordersCh <- newJob(info.OrderID, 10)
-			continue
+processing:
+	for {
+		select {
+		case <-ctx.Done():
+			break processing
+		case info, ok := <-s.ordersInfoCh:
+			if !ok {
+				break processing
+			}
+			switch info.Status {
+			case string(types.OrderStatusProcessed):
+				err = s.markOrderAsProcessed(ctx, info.OrderID, info.Accrual)
+			case string(types.OrderStatusInvalid):
+				err = s.markOrderAsInvalid(ctx, info.OrderID)
+			case string(types.OrderStatusProcessing):
+				err = s.markOrderAsProcessing(ctx, info.OrderID)
+			default:
+				log.Warn().Str("status", info.Status).Str("order", info.OrderID).Msg("Unknown order status")
+			}
+
+			if err != nil {
+				log.Error().Str("order", info.OrderID).Err(err).Msg("Failed to update order")
+				s.ordersCh <- newJob(info.OrderID, 10)
+				continue processing
+			}
 		}
 	}
 }
