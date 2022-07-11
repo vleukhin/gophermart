@@ -3,6 +3,10 @@ linters:
     - goimports
   disable:
     - typecheck
+    - gosimple
+    - staticcheck
+    - structcheck
+    - unused
 
 linters-settings:
   goimports:

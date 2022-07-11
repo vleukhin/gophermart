@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/vleukhin/gophermart/internal/services/users"
 	"io"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/rs/zerolog/log"
+
+	"github.com/vleukhin/gophermart/internal/services/users"
 )
 
 type UsersController struct {

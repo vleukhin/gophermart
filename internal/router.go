@@ -2,11 +2,13 @@ package internal
 
 import (
 	"compress/gzip"
-	"github.com/gorilla/mux"
-	"github.com/rs/zerolog/log"
-	"github.com/vleukhin/gophermart/internal/handlers"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
+
+	"github.com/vleukhin/gophermart/internal/handlers"
 )
 
 type gzipWriter struct {

@@ -2,10 +2,10 @@ package balance
 
 import (
 	"context"
-	"github.com/vleukhin/gophermart/internal/types"
 	"sync"
 
 	"github.com/vleukhin/gophermart/internal/storage"
+	"github.com/vleukhin/gophermart/internal/types"
 )
 
 type Service struct {

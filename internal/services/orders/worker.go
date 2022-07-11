@@ -2,9 +2,11 @@ package orders
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
-	"github.com/vleukhin/gophermart/internal/services/accrual"
 	"time"
+
+	"github.com/rs/zerolog/log"
+
+	"github.com/vleukhin/gophermart/internal/services/accrual"
 )
 
 type (

@@ -2,16 +2,18 @@ package internal
 
 import (
 	"context"
+	"net/http"
+	"time"
+
 	"github.com/caarlos0/env"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/pflag"
+
 	"github.com/vleukhin/gophermart/internal/services/accrual"
 	"github.com/vleukhin/gophermart/internal/services/balance"
 	"github.com/vleukhin/gophermart/internal/services/orders"
 	"github.com/vleukhin/gophermart/internal/services/users"
 	"github.com/vleukhin/gophermart/internal/storage"
-	"net/http"
-	"time"
 )
 
 type AppConfig struct {

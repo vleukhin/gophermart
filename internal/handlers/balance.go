@@ -2,13 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/vleukhin/gophermart/internal/services/balance"
-	"github.com/vleukhin/gophermart/internal/services/users"
 	"io"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/rs/zerolog/log"
+
+	"github.com/vleukhin/gophermart/internal/services/balance"
+	"github.com/vleukhin/gophermart/internal/services/users"
 )
 
 type (
