@@ -8,18 +8,24 @@ import (
 	"github.com/vleukhin/gophermart/internal/types"
 )
 
-type Service struct {
+type Service interface {
+	Balance(ctx context.Context, userID int) (types.Balance, error)
+	CreateWithdraw(ctx context.Context, userID int, orderID string, sum float32) (bool, error)
+	WithdrawalsList(ctx context.Context, userID int) ([]types.Withdraw, error)
+}
+
+type DefaultService struct {
 	mutex   sync.Mutex
 	storage storage.Storage
 }
 
-func NewService(storage storage.Storage) *Service {
-	return &Service{
+func NewService(storage storage.Storage) Service {
+	return &DefaultService{
 		storage: storage,
 	}
 }
 
-func (s *Service) Balance(ctx context.Context, userID int) (types.Balance, error) {
+func (s *DefaultService) Balance(ctx context.Context, userID int) (types.Balance, error) {
 	accrual, err := s.storage.GetAccrualSum(ctx, userID)
 	if err != nil {
 		return types.Balance{}, err
@@ -35,7 +41,7 @@ func (s *Service) Balance(ctx context.Context, userID int) (types.Balance, error
 	}, nil
 }
 
-func (s *Service) CreateWithdraw(ctx context.Context, userID int, orderID string, sum float32) (bool, error) {
+func (s *DefaultService) CreateWithdraw(ctx context.Context, userID int, orderID string, sum float32) (bool, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -51,6 +57,6 @@ func (s *Service) CreateWithdraw(ctx context.Context, userID int, orderID string
 	return true, nil
 }
 
-func (s *Service) WithdrawalsList(ctx context.Context, userID int) ([]types.Withdraw, error) {
+func (s *DefaultService) WithdrawalsList(ctx context.Context, userID int) ([]types.Withdraw, error) {
 	return s.storage.GetWithdrawals(ctx, userID)
 }

@@ -29,7 +29,7 @@ func errorResponse(w http.ResponseWriter, err error, log *zerolog.Event) {
 	log.Err(err)
 }
 
-func checkAuth(w http.ResponseWriter, r *http.Request, service *users.Service) int {
+func checkAuth(w http.ResponseWriter, r *http.Request, service users.Service) int {
 	userID := service.GetAuthUserID(r.Context())
 	if userID == 0 {
 		w.WriteHeader(http.StatusUnauthorized)

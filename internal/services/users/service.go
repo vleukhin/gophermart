@@ -14,7 +14,13 @@ import (
 )
 
 type (
-	Service struct {
+	Service interface {
+		Register(ctx context.Context, name, password string) (string, time.Time, error)
+		Login(ctx context.Context, name, password string) (string, time.Time, error)
+		CheckAuth(r *http.Request) (*Claims, error)
+		GetAuthUserID(ctx context.Context) int
+	}
+	DefaultService struct {
 		storage storage.Storage
 		jwtKey  []byte
 	}
@@ -29,14 +35,14 @@ const AuthUserID ContextKey = "userID"
 
 var ErrUsernameTaken = errors.New("this username is already taken")
 
-func NewService(storage storage.Storage, jwtKey string) *Service {
-	return &Service{
+func NewService(storage storage.Storage, jwtKey string) Service {
+	return &DefaultService{
 		storage: storage,
 		jwtKey:  []byte(jwtKey),
 	}
 }
 
-func (s *Service) Register(ctx context.Context, name, password string) (string, time.Time, error) {
+func (s *DefaultService) Register(ctx context.Context, name, password string) (string, time.Time, error) {
 	passwordHash, err := s.hashPassword(password)
 	if err != nil {
 		return "", time.Now(), err
@@ -61,7 +67,7 @@ func (s *Service) Register(ctx context.Context, name, password string) (string, 
 	return s.authorize(user.ID)
 }
 
-func (s *Service) Login(ctx context.Context, name, password string) (string, time.Time, error) {
+func (s *DefaultService) Login(ctx context.Context, name, password string) (string, time.Time, error) {
 	user, err := s.storage.GetUser(ctx, name)
 	if err != nil {
 		return "", time.Now(), err
@@ -74,7 +80,7 @@ func (s *Service) Login(ctx context.Context, name, password string) (string, tim
 	return s.authorize(user.ID)
 }
 
-func (s *Service) authorize(id int) (string, time.Time, error) {
+func (s *DefaultService) authorize(id int) (string, time.Time, error) {
 	ttl := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		UserID: id,
@@ -92,7 +98,7 @@ func (s *Service) authorize(id int) (string, time.Time, error) {
 	return tokenString, ttl, nil
 }
 
-func (s *Service) CheckAuth(r *http.Request) (*Claims, error) {
+func (s *DefaultService) CheckAuth(r *http.Request) (*Claims, error) {
 	c, err := r.Cookie("token")
 	if err != nil {
 		return nil, err
@@ -114,7 +120,7 @@ func (s *Service) CheckAuth(r *http.Request) (*Claims, error) {
 	return claims, nil
 }
 
-func (s *Service) GetAuthUserID(ctx context.Context) int {
+func (s *DefaultService) GetAuthUserID(ctx context.Context) int {
 	value := ctx.Value(AuthUserID)
 	if id, ok := value.(int); ok {
 		return id
@@ -123,12 +129,12 @@ func (s *Service) GetAuthUserID(ctx context.Context) int {
 	return 0
 }
 
-func (s *Service) hashPassword(password string) (string, error) {
+func (s *DefaultService) hashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
 }
 
-func (s *Service) checkPasswordHash(password, hash string) bool {
+func (s *DefaultService) checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }

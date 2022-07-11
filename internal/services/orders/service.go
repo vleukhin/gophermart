@@ -12,7 +12,16 @@ import (
 
 const workersNumber = 2
 
-type Service struct {
+type Service interface {
+	List(ctx context.Context, userID int) ([]types.Order, error)
+	Create(ctx context.Context, userID int, orderID string) error
+	Process(orderID string)
+	GetByID(ctx context.Context, orderID string) (*types.Order, error)
+	ValidateOrderID(id string) bool
+	ShutDown()
+}
+
+type DefaultService struct {
 	storage        storage.Storage
 	ordersCh       chan job
 	ordersInfoCh   chan accrual.OrderInfo
@@ -20,7 +29,7 @@ type Service struct {
 	validator      OrderValidator
 }
 
-func NewService(storage storage.Storage, accrualService accrual.Service) *Service {
+func NewService(storage storage.Storage, accrualService accrual.Service) Service {
 	ordersCh := make(chan job)
 	ordersInfoCh := make(chan accrual.OrderInfo)
 	for i := 0; i < workersNumber; i++ {
@@ -28,7 +37,7 @@ func NewService(storage storage.Storage, accrualService accrual.Service) *Servic
 		go w.Run()
 	}
 
-	service := &Service{
+	service := &DefaultService{
 		storage:        storage,
 		accrualService: accrualService,
 		ordersCh:       ordersCh,
@@ -41,17 +50,17 @@ func NewService(storage storage.Storage, accrualService accrual.Service) *Servic
 	return service
 }
 
-func (s *Service) updateProcessedOrders() {
+func (s *DefaultService) updateProcessedOrders() {
 	ctx := context.TODO()
 	var err error
 	for info := range s.ordersInfoCh {
 		switch info.Status {
 		case string(types.OrderStatusProcessed):
-			err = s.MarkOrderAsProcessed(ctx, info.OrderID, info.Accrual)
+			err = s.markOrderAsProcessed(ctx, info.OrderID, info.Accrual)
 		case string(types.OrderStatusInvalid):
-			err = s.MarkOrderAsInvalid(ctx, info.OrderID)
+			err = s.markOrderAsInvalid(ctx, info.OrderID)
 		case string(types.OrderStatusProcessing):
-			err = s.MarkOrderAsProcessing(ctx, info.OrderID)
+			err = s.markOrderAsProcessing(ctx, info.OrderID)
 		default:
 			log.Warn().Str("status", info.Status).Str("order", info.OrderID).Msg("Unknown order status")
 		}
@@ -64,11 +73,11 @@ func (s *Service) updateProcessedOrders() {
 	}
 }
 
-func (s *Service) List(ctx context.Context, userID int) ([]types.Order, error) {
+func (s *DefaultService) List(ctx context.Context, userID int) ([]types.Order, error) {
 	return s.storage.GetUserOrders(ctx, userID)
 }
 
-func (s *Service) Create(ctx context.Context, userID int, orderID string) error {
+func (s *DefaultService) Create(ctx context.Context, userID int, orderID string) error {
 	order, err := s.storage.CreateOrder(ctx, userID, orderID)
 	if err != nil {
 		return err
@@ -79,31 +88,31 @@ func (s *Service) Create(ctx context.Context, userID int, orderID string) error 
 	return nil
 }
 
-func (s *Service) Process(orderID string) {
+func (s *DefaultService) Process(orderID string) {
 	s.ordersCh <- newJob(orderID, 10)
 }
 
-func (s *Service) GetByID(ctx context.Context, orderID string) (*types.Order, error) {
+func (s *DefaultService) GetByID(ctx context.Context, orderID string) (*types.Order, error) {
 	return s.storage.GetOrderByID(ctx, orderID)
 }
 
-func (s *Service) ValidateOrderID(id string) bool {
+func (s *DefaultService) ValidateOrderID(id string) bool {
 	return s.validator.OrderNumberIsValid(id)
 }
 
-func (s *Service) MarkOrderAsProcessed(ctx context.Context, orderID string, accrual float32) error {
+func (s *DefaultService) markOrderAsProcessed(ctx context.Context, orderID string, accrual float32) error {
 	return s.storage.UpdateOrder(ctx, orderID, types.OrderStatusProcessed, accrual)
 }
 
-func (s *Service) MarkOrderAsProcessing(ctx context.Context, orderID string) error {
+func (s *DefaultService) markOrderAsProcessing(ctx context.Context, orderID string) error {
 	return s.storage.UpdateOrder(ctx, orderID, types.OrderStatusProcessing, 0)
 }
 
-func (s *Service) MarkOrderAsInvalid(ctx context.Context, orderID string) error {
+func (s *DefaultService) markOrderAsInvalid(ctx context.Context, orderID string) error {
 	return s.storage.UpdateOrder(ctx, orderID, types.OrderStatusProcessing, 0)
 }
 
-func (s *Service) ShutDown() {
+func (s *DefaultService) ShutDown() {
 	close(s.ordersCh)
 	close(s.ordersInfoCh)
 }

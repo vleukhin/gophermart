@@ -12,11 +12,11 @@ import (
 )
 
 type OrdersController struct {
-	usersService  *users.Service
-	ordersService *orders.Service
+	usersService  users.Service
+	ordersService orders.Service
 }
 
-func NewOrdersController(usersService *users.Service, ordersService *orders.Service) OrdersController {
+func NewOrdersController(usersService users.Service, ordersService orders.Service) OrdersController {
 	return OrdersController{
 		usersService:  usersService,
 		ordersService: ordersService,

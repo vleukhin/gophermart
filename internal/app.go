@@ -25,11 +25,11 @@ type AppConfig struct {
 }
 
 type Application struct {
-	cfg            *AppConfig
-	db             storage.Storage
-	UsersService   *users.Service
-	OrdersService  *orders.Service
-	BalanceService *balance.Service
+	Cfg            *AppConfig
+	Db             storage.Storage
+	UsersService   users.Service
+	OrdersService  orders.Service
+	BalanceService balance.Service
 	AccrualService accrual.Service
 }
 
@@ -66,8 +66,8 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 	balanceService := balance.NewService(db)
 
 	app := Application{
-		cfg:            cfg,
-		db:             db,
+		Cfg:            cfg,
+		Db:             db,
 		UsersService:   userService,
 		OrdersService:  ordersService,
 		AccrualService: accrualService,
@@ -83,16 +83,16 @@ func NewApplication(cfg *AppConfig) (*Application, error) {
 }
 
 func (app *Application) Run(err chan<- error) {
-	log.Info().Msg("Gopher-mart API listen at: " + app.cfg.Addr)
-	err <- http.ListenAndServe(app.cfg.Addr, NewRouter(app))
+	log.Info().Msg("Gopher-mart API listen at: " + app.Cfg.Addr)
+	err <- http.ListenAndServe(app.Cfg.Addr, NewRouter(app))
 }
 
 func (app *Application) ShutDown() error {
-	app.db.ShutDown()
+	app.Db.ShutDown()
 	app.OrdersService.ShutDown()
 	return nil
 }
 
 func (app *Application) migrate() error {
-	return app.db.Migrate(context.TODO())
+	return app.Db.Migrate(context.TODO())
 }

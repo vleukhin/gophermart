@@ -14,8 +14,8 @@ import (
 
 type (
 	BalanceController struct {
-		balanceService *balance.Service
-		usersService   *users.Service
+		balanceService balance.Service
+		usersService   users.Service
 	}
 	WithdrawParams struct {
 		Order string  `json:"order"`
@@ -23,7 +23,7 @@ type (
 	}
 )
 
-func NewBalanceController(balanceService *balance.Service, usersService *users.Service) BalanceController {
+func NewBalanceController(balanceService balance.Service, usersService users.Service) BalanceController {
 	return BalanceController{
 		balanceService: balanceService,
 		usersService:   usersService,
