@@ -9,7 +9,7 @@ import (
 	"github.com/vleukhin/gophermart/internal/services/users"
 )
 
-func jsonResponse(w http.ResponseWriter, v any, log *zerolog.Event) {
+func jsonResponse(w http.ResponseWriter, v interface{}, log *zerolog.Event) {
 	response, err := json.Marshal(v)
 	if err != nil {
 		errorResponse(w, err, log)

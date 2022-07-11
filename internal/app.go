@@ -26,7 +26,7 @@ type AppConfig struct {
 
 type Application struct {
 	Cfg            *AppConfig
-	Db             storage.Storage
+	DB             storage.Storage
 	UsersService   users.Service
 	OrdersService  orders.Service
 	BalanceService balance.Service
@@ -69,7 +69,7 @@ func NewApplication(ctx context.Context, cfg *AppConfig) (*Application, error) {
 
 	app := Application{
 		Cfg:            cfg,
-		Db:             db,
+		DB:             db,
 		UsersService:   userService,
 		OrdersService:  ordersService,
 		AccrualService: accrualService,
@@ -90,11 +90,11 @@ func (app *Application) Run(err chan<- error) {
 }
 
 func (app *Application) ShutDown() error {
-	app.Db.ShutDown()
+	app.DB.ShutDown()
 	app.OrdersService.ShutDown()
 	return nil
 }
 
 func (app *Application) migrate(ctx context.Context) error {
-	return app.Db.Migrate(ctx)
+	return app.DB.Migrate(ctx)
 }
